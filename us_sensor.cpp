@@ -1,4 +1,4 @@
-#import <Arduino.h>
+#include <Arduino.h>
 #include "us_sensor.h"
 
 void initialize_us_sensor(int ping_pin, int echo_pin)
