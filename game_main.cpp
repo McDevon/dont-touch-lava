@@ -15,8 +15,9 @@ void initialize_game(GameState *state)
   state->current_step = 0;
   state->current_substep = 0;
   state->animation = 1;
+  state->animation_step = 0;
   state->last_duration = us_cm_to_microseconds((min_us_distance + max_us_distance) / 2);
-  state->step_duration = 50;
+  state->step_duration = 10;
   state->player_position = state->led_count / 2;
   state->area_height = state->led_count - 10;
   state->area_top = 5;
@@ -85,6 +86,7 @@ void lose_game(GameState *state)
 {
   state->animation = 2;
   state->current_substep = 0;
+  state->animation_step = 0;
 }
 
 void test_area(GameState *state)
@@ -110,7 +112,22 @@ void play_game(GameState *state, long distance)
 
 void ending_animation(GameState *state, long distance)
 {
-  
+  CRGB color = CRGB::Black;
+  state->current_substep++;
+  if (state->current_substep > 20) {
+    state->current_substep = 0;
+    state->animation_step++;
+  }
+  if (state->current_substep > 10) {
+    color = CRGB::Red;
+  }
+
+  for (int i = 0; i < state->led_count; ++i) {
+    state->leds[i] = color;
+  }
+  if (state->animation_step > 5) {
+    initialize_game(state);
+  }
 }
 
 int step_game(GameState *state, long sensor_duration)
@@ -123,13 +140,13 @@ int step_game(GameState *state, long sensor_duration)
 
   if (state->animation == 1) {
     wait_for_player_to_be_ready(state, distance);    
+    draw_state(state);
   } else if (state->animation == 0) {
     play_game(state, distance);
+    draw_state(state);
   } else if (state->animation == 2) {
     ending_animation(state, distance);
   }
-
-  draw_state(state);
 
   return state->step_duration;
 }
