@@ -12,17 +12,20 @@ const long start_max_distance = us_cm_to_microseconds(min_us_distance + (max_us_
 
 void initialize_game(GameState *state)
 {
+  randomSeed(analogRead(0));
+
   state->current_step = 0;
   state->current_substep = 0;
   state->animation = 1;
   state->animation_step = 0;
+  state->phase_step = 50 + random(100);
   state->last_duration = us_cm_to_microseconds((min_us_distance + max_us_distance) / 2);
   state->step_duration = 10;
   state->player_position = state->led_count / 2;
   state->area_height = state->led_count - 10;
   state->area_top = 5;
-
-  randomSeed(analogRead(0));
+  state->lava_burst_position = -1;
+  state->lava_burst_step = -200 - random(100);
 }
 
 void draw_state(GameState *state)
@@ -68,8 +71,6 @@ void move_area(GameState *state)
   const long speedup_interval = 100;
   const long narrow_interval = 200;
 
-  const long random_length = 150;
-
   if (state->current_step % speedup_interval == 0 && state->step_duration > 4) {
     state->step_duration -= 2;
   }
@@ -77,32 +78,29 @@ void move_area(GameState *state)
     state->area_height -= 1;
   }
 
-  if (state->animation_step < random_length && state->animation_step >= 0) {
+  if (state->phase_step >= 0) {
     const int change = random(3);
     if (change == 0 && state->area_top > 2) {
       state->area_top -= 1;
     } else if (change == 1 && state->area_top < state->led_count - state->area_height - 2) {
       state->area_top += 1;
     }
+    state->phase_step -= 1;
   } else {
-    if (state->animation_step > 0) {
-      state->animation_step = -1;
-    }
-
-    if (state->animation_step == -1 || state->animation_step == -3) {
+    if (state->phase_step == -1 || state->phase_step == -3) {
       if (state->area_top > 2) {
         state->area_top -= 1;
       } else {
-        state->animation_step--;
+        state->phase_step--;
       }
-    } else if (state->animation_step == -2) {
+    } else if (state->phase_step == -2) {
       if (state->area_top < state->led_count - state->area_height - 2) {
         state->area_top += 1;
       } else {
-        state->animation_step--;
+        state->phase_step--;
       }
     } else {
-      state->animation_step = 0;
+      state->phase_step = 100 + random(100);
     }
   }
 }
