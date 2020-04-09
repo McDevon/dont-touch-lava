@@ -1,14 +1,19 @@
 #include "game_main.h"
 #include "us_sensor.h"
 
-const long min_us_distance = 50;
-const long max_us_distance = 200;
+#define min_us_distance 50
+#define max_us_distance 200
+#define max_us_move_per_step 3
+#define us_outlier_threshold 30
 
 const long min_distance = us_cm_to_microseconds(min_us_distance);
 const long max_distance = us_cm_to_microseconds(max_us_distance);
 
 const long start_min_distance = us_cm_to_microseconds(min_us_distance + (max_us_distance - min_us_distance) / 3);
 const long start_max_distance = us_cm_to_microseconds(min_us_distance + (max_us_distance - min_us_distance) / 3 * 2);
+
+const long max_move_speed = us_cm_to_microseconds(max_us_move_per_step);
+const long move_outlier_threshold = us_cm_to_microseconds(us_outlier_threshold);
 
 #define LAVA_BURST_WARNING_START 3
 #define LAVA_BURST_LAVA_STEP_LENGTH 3
@@ -204,13 +209,22 @@ void ending_animation(GameState *state, long distance)
   }
 }
 
+inline long sign(long value) {
+  return value < 0 ? -1 : 1;
+}
+
 int step_game(GameState *state, long sensor_duration)
 {
   if (state->player_position < 0) {
     initialize_game(state);
   }
 
-  const long distance = (sensor_duration > min_distance && sensor_duration < max_distance) ? sensor_duration : state->last_duration;
+  long distance = (sensor_duration > min_distance && sensor_duration < max_distance) ? sensor_duration : state->last_duration;
+  const long change = distance - state->last_duration;
+
+  if (abs(change) > max_move_speed) {
+    distance = sign(change) * max_move_speed + state->last_duration;
+  }
 
   if (state->animation == 1) {
     wait_for_player_to_be_ready(state, distance);    
