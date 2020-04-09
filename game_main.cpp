@@ -1,5 +1,6 @@
 #include "game_main.h"
 #include "us_sensor.h"
+#include "colors.h"
 
 #define min_us_distance 50
 #define max_us_distance 200
@@ -38,6 +39,16 @@ void initialize_game(GameState *state)
   state->lava_burst_step = -200 - random(100);
 }
 
+CHSV lava_color(GameState *state, int index)
+{
+  return lava_colors[(state->color_offset + index) % lava_colors_count];
+}
+
+CHSV warning_color(GameState *state, int index)
+{
+  return warning_colors[(state->color_offset + index) % warning_colors_count];
+}
+
 void draw_state(GameState *state)
 {
   int warningRadius = 0;
@@ -62,13 +73,13 @@ void draw_state(GameState *state)
     if (i == state->player_position) {
       state->leds[i] = CRGB::Blue;
     } else if (i < state->area_top) {
-      state->leds[i] = CRGB::Red;
+      state->leds[i] = lava_color(state, i);
     } else if (i > state->area_top + state->area_height) {
-      state->leds[i] = CRGB::Red;
+      state->leds[i] = lava_color(state, i);
     } else if (distance < outerRadius && distance > innerRadius) {
-      state->leds[i] = CRGB::Red;
+      state->leds[i] = lava_color(state, i);
     } else if (distance < warningRadius) {
-      state->leds[i] = CRGB::Yellow;
+      state->leds[i] = warning_color(state, i);
     } else {
       state->leds[i] = CRGB::Black;
     }
@@ -191,19 +202,19 @@ void play_game(GameState *state, long distance)
 
 void ending_animation(GameState *state, long distance)
 {
-  CRGB color = CRGB::Black;
   state->current_substep++;
   if (state->current_substep > 20) {
     state->current_substep = 0;
     state->animation_step++;
   }
   if (state->current_substep > 10) {
-    color = CRGB::Red;
+    for (int i = 0; i < state->led_count; ++i) {
+      state->leds[i] = CRGB::Red;
+    }
+  } else {
+    draw_state(state);
   }
 
-  for (int i = 0; i < state->led_count; ++i) {
-    state->leds[i] = color;
-  }
   if (state->animation_step > 5) {
     initialize_game(state);
   }
@@ -217,6 +228,11 @@ int step_game(GameState *state, long sensor_duration)
 {
   if (state->player_position < 0) {
     initialize_game(state);
+  }
+
+  state->color_offset += 1;
+  if (state->color_offset >= lava_colors_count) {
+    state->color_offset = 0;
   }
 
   long distance = (sensor_duration > min_distance && sensor_duration < max_distance) ? sensor_duration : state->last_duration;
