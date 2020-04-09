@@ -10,6 +10,11 @@ const long max_distance = us_cm_to_microseconds(max_us_distance);
 const long start_min_distance = us_cm_to_microseconds(min_us_distance + (max_us_distance - min_us_distance) / 3);
 const long start_max_distance = us_cm_to_microseconds(min_us_distance + (max_us_distance - min_us_distance) / 3 * 2);
 
+#define LAVA_BURST_WARNING_START 3
+#define LAVA_BURST_LAVA_STEP_LENGTH 3
+#define LAVA_BURST_LAVA_START 9
+#define LAVA_BURST_LAVA_END 19
+
 void initialize_game(GameState *state)
 {
   randomSeed(analogRead(0));
@@ -30,13 +35,35 @@ void initialize_game(GameState *state)
 
 void draw_state(GameState *state)
 {
+  int warningRadius = 0;
+  int outerRadius = 0;
+  int innerRadius = -1;
+  if (state->lava_burst_position > LAVA_BURST_WARNING_START) {
+    if (state->lava_burst_step > LAVA_BURST_LAVA_START && state->lava_burst_step <= LAVA_BURST_LAVA_END) {
+      outerRadius = (1 + state->lava_burst_step - LAVA_BURST_LAVA_START) / LAVA_BURST_LAVA_STEP_LENGTH;
+      warningRadius = (1 + state->lava_burst_step - LAVA_BURST_WARNING_START) / LAVA_BURST_LAVA_STEP_LENGTH;
+    } else if (state->lava_burst_step > LAVA_BURST_LAVA_END) {
+      outerRadius = (1 + LAVA_BURST_LAVA_END - LAVA_BURST_LAVA_START) / LAVA_BURST_LAVA_STEP_LENGTH;
+      innerRadius = (1 + LAVA_BURST_LAVA_END - state->lava_burst_step) / LAVA_BURST_LAVA_STEP_LENGTH;
+      warningRadius = (1 + LAVA_BURST_LAVA_END - LAVA_BURST_WARNING_START) / LAVA_BURST_LAVA_STEP_LENGTH;
+    }
+  }
+
   for (int i = 0; i < state->led_count; ++i) {
-    if (i < state->area_top) {
-      state->leds[i] = CRGB::Red;
-    } else if (i == state->player_position) {
+    int distance = -1;
+    if (state->lava_burst_position > LAVA_BURST_WARNING_START) {
+      distance = abs(i - state->lava_burst_position);
+    }
+    if (i == state->player_position) {
       state->leds[i] = CRGB::Blue;
+    } else if (i < state->area_top) {
+      state->leds[i] = CRGB::Red;
     } else if (i > state->area_top + state->area_height) {
       state->leds[i] = CRGB::Red;
+    } else if (distance < outerRadius && distance > innerRadius) {
+      state->leds[i] = CRGB::Red;
+    } else if (distance < warningRadius) {
+      state->leds[i] = CRGB::Yellow;
     } else {
       state->leds[i] = CRGB::Black;
     }
@@ -103,6 +130,16 @@ void move_area(GameState *state)
       state->phase_step = 100 + random(100);
     }
   }
+
+  state->lava_burst_step++;
+  if (state->lava_burst_step >= 0) {
+    if (state->lava_burst_step == 0) {
+      state->lava_burst_position = state->player_position;
+    } else if (state->lava_burst_step > LAVA_BURST_LAVA_END + (LAVA_BURST_LAVA_END - LAVA_BURST_LAVA_START)) {
+      state->lava_burst_step = -50 - random(150);
+      state->lava_burst_position = -1;
+    }
+  }
 }
 
 void lose_game(GameState *state)
@@ -117,6 +154,20 @@ void test_area(GameState *state)
   if (state->player_position < state->area_top
       || state->player_position > state->area_top + state->area_height) {
     lose_game(state);
+  }
+
+  if (state->lava_burst_step > LAVA_BURST_LAVA_START && state->lava_burst_step <= LAVA_BURST_LAVA_END) {
+    const int radius = (1 + state->lava_burst_step - LAVA_BURST_LAVA_START) / LAVA_BURST_LAVA_STEP_LENGTH;
+    if (abs(state->player_position - state->lava_burst_position) < radius) {
+      lose_game(state);
+    }
+  } else if (state->lava_burst_step > LAVA_BURST_LAVA_END) {
+    const int outerRadius = (1 + LAVA_BURST_LAVA_END - LAVA_BURST_LAVA_START) / LAVA_BURST_LAVA_STEP_LENGTH;
+    const int innerRadius = (1 + LAVA_BURST_LAVA_END - state->lava_burst_step) / LAVA_BURST_LAVA_STEP_LENGTH;
+    const int distance = abs(state->player_position - state->lava_burst_position);
+    if (distance < outerRadius && distance > innerRadius) {
+      lose_game(state);
+    }
   }
 }
 
