@@ -66,7 +66,7 @@ void draw_state(GameState *state)
   }
 
   for (int i = 0; i < state->led_count; ++i) {
-    int distance = -1;
+    int distance = INT16_MAX;
     if (state->lava_burst_position > LAVA_BURST_WARNING_START) {
       distance = abs(i - state->lava_burst_position);
     }
