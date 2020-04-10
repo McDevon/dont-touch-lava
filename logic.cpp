@@ -35,13 +35,6 @@ void loop()
   if (delay_accumulated >= ultrasonic_min_interval) {
     delay_accumulated = 0;
     duration = activate_us_sensor(US_PING_PIN, US_ECHO_PIN);
-
-    long cm = us_microseconds_to_cm(duration);
-    Serial.print(cm);
-    Serial.print("cm, ");
-    Serial.print(duration);
-    Serial.print(" us");
-    Serial.println();
   } 
 
   int delay_time = step_game(&game_state, duration);
