@@ -14,14 +14,17 @@ struct GameState {
   int area_height;
   int area_top;
   int animation;
+  int collectible_position;
+  int collectible_timer;
   int lava_burst_position;
   int lava_burst_step;
+  int score;
   int last_duration;
   int player_position;
   int led_count;
 };
 
-#define CREATE_GAME_STATE(leds, led_count) { leds, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, led_count }
+#define CREATE_GAME_STATE(leds, led_count) { leds, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, led_count }
 
 int step_game(GameState *state, long sensor_duration);
 

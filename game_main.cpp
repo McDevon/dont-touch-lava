@@ -39,7 +39,13 @@ void initialize_game(GameState *state)
   state->area_height = state->led_count - 10;
   state->area_top = 5;
   state->lava_burst_position = -1;
+  state->collectible_position = -1;
+  state->collectible_timer = 10;
   state->lava_burst_step = -60 - random(10);
+
+  state->score = 0;
+
+  Serial.println(" -- Start new game -- ");
 }
 
 CHSV lava_color(GameState *state, int index)
@@ -75,6 +81,8 @@ void draw_state(GameState *state)
     }
     if (i == state->player_position) {
       state->leds[i] = CRGB::Blue;
+    } else if (i == state->collectible_position) {
+      state->leds[i] = CRGB::Green;
     } else if (i < state->area_top) {
       state->leds[i] = lava_color(state, i);
     } else if (i > state->area_top + state->area_height) {
@@ -163,6 +171,16 @@ void lose_game(GameState *state)
   state->animation = 2;
   state->current_substep = 0;
   state->animation_step = 0;
+
+  Serial.print("GAME OVER, Score ");
+  Serial.print(state->score);
+  Serial.println("");
+}
+
+void reset_collectible(GameState *state)
+{
+  state->collectible_timer = 15 + random(15);
+  state->collectible_position = -1;
 }
 
 void test_area(GameState *state)
@@ -171,19 +189,57 @@ void test_area(GameState *state)
       || state->player_position > state->area_top + state->area_height) {
     lose_game(state);
   }
+  if (state->collectible_position >= 0 && (state->collectible_position < state->area_top
+      || state->collectible_position > state->area_top + state->area_height)) {
+    reset_collectible(state);
+  }
 
   if (state->lava_burst_step > LAVA_BURST_LAVA_START && state->lava_burst_step <= LAVA_BURST_LAVA_END) {
     const int radius = (1 + state->lava_burst_step - LAVA_BURST_LAVA_START) / LAVA_BURST_LAVA_STEP_LENGTH;
     if (abs(state->player_position - state->lava_burst_position) < radius) {
       lose_game(state);
     }
+    if (state->collectible_position >= 0 && abs(state->collectible_position - state->lava_burst_position) < radius) {
+      reset_collectible(state);
+    }
   } else if (state->lava_burst_step > LAVA_BURST_LAVA_END) {
     const int outerRadius = (1 + LAVA_BURST_LAVA_END - LAVA_BURST_LAVA_START) / LAVA_BURST_LAVA_STEP_LENGTH;
     const int innerRadius = (1 + state->lava_burst_step - LAVA_BURST_LAVA_END) / LAVA_BURST_LAVA_STEP_LENGTH;
     const int distance = abs(state->player_position - state->lava_burst_position);
+    const int collectible_distance = abs(state->collectible_position - state->lava_burst_position);
     if (distance < outerRadius && distance > innerRadius) {
       lose_game(state);
     }
+    if (state->collectible_position >= 0 && collectible_distance < outerRadius && collectible_distance > innerRadius) {
+      reset_collectible(state);
+    }
+  }
+}
+
+void update_collectible(GameState *state)
+{
+  if (state->collectible_timer > 0) {
+    state->collectible_timer -= 1;
+    if (state->collectible_timer == 0) {
+      state->collectible_timer = -1;
+      const int bottom_distance = (state->area_top + state->area_height) - state->player_position;
+      const int top_distance = state->player_position - state->area_top;
+      state->collectible_position = top_distance > bottom_distance ? state->area_top + 2 + random(3) : state->area_top + state->area_height - (2 + random(3));
+      Serial.print("New collectible at ");
+      Serial.print(state->collectible_position);
+      Serial.println("");
+    }
+  }
+}
+
+void test_collectible(GameState *state)
+{
+  if (state->collectible_position >= 0 && state->player_position == state->collectible_position) {
+    reset_collectible(state);
+    state->score += 1;
+    Serial.print("Gem collected, Score ");
+    Serial.print(state->score);
+    Serial.println("");
   }
 }
 
@@ -197,6 +253,8 @@ void play_game(GameState *state, long distance)
     move_area(state);
   }
 
+  update_collectible(state);
+  test_collectible(state);
   test_area(state);
 }
 
