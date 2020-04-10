@@ -252,5 +252,7 @@ int step_game(GameState *state, long sensor_duration)
     ending_animation(state, distance);
   }
 
+  state->last_duration = distance;
+
   return state->step_duration;
 }
