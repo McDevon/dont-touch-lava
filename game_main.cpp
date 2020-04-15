@@ -48,14 +48,9 @@ void initialize_game(GameState *state)
   Serial.println(" -- Start new game -- ");
 }
 
-CHSV lava_color(GameState *state, int index)
+CHSV color_animation(GameState *state, const int index, const CHSV *colors, const int count)
 {
-  return lava_colors[(state->color_offset + index) % lava_colors_count];
-}
-
-CHSV warning_color(GameState *state, int index)
-{
-  return warning_colors[(state->color_offset + index) % warning_colors_count];
+  return colors[(state->color_offset + index) % count];
 }
 
 void draw_state(GameState *state)
@@ -82,15 +77,15 @@ void draw_state(GameState *state)
     if (i == state->player_position) {
       state->leds[i] = CRGB::Blue;
     } else if (i == state->collectible_position) {
-      state->leds[i] = CRGB::Green;
+      state->leds[i] = color_animation(state, i, gem_colors, gem_colors_count);
     } else if (i < state->area_top) {
-      state->leds[i] = lava_color(state, i);
+      state->leds[i] = color_animation(state, i, lava_colors, lava_colors_count);
     } else if (i > state->area_top + state->area_height) {
-      state->leds[i] = lava_color(state, i);
+      state->leds[i] = color_animation(state, i, lava_colors, lava_colors_count);
     } else if (distance < outerRadius && distance > innerRadius) {
-      state->leds[i] = lava_color(state, i);
+      state->leds[i] = color_animation(state, i, lava_colors, lava_colors_count);
     } else if (distance < warningRadius && distance > innerRadius) {
-      state->leds[i] = warning_color(state, i);
+      state->leds[i] = color_animation(state, i, warning_colors, warning_colors_count);
     } else {
       state->leds[i] = CRGB::Black;
     }

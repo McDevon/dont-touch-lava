@@ -37,6 +37,23 @@ def main():
     color(61, 97, 41)
     color(64, 95, 37)
 
+    print('\n gems\n')
+    color(118, 100, 100)
+    color(118, 99, 99)
+    color(118, 98, 99)
+    color(118, 97, 99)
+    color(118, 98, 98)
+    color(118, 99, 97)
+    color(118, 100, 96)
+    color(118, 99, 97)
+    color(118, 99, 98)
+    color(118, 99, 99)
+    color(118, 29, 97)
+    color(118, 31, 97)
+    color(118, 99, 99)
+    color(118, 28, 97)
+    color(118, 99, 99)
+
 
 if __name__ == '__main__':
     main()

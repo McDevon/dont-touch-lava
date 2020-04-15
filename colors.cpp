@@ -33,3 +33,21 @@ extern const CHSV warning_colors[] = {
   CHSV(43, 247, 105),
   CHSV(45, 242, 94)
 };
+
+extern const CHSV gem_colors[] = {
+  CHSV(84, 255, 255),
+  CHSV(84, 252, 252),
+  CHSV(84, 250, 252),
+  CHSV(84, 247, 252),
+  CHSV(84, 250, 250),
+  CHSV(84, 252, 247),
+  CHSV(84, 255, 245),
+  CHSV(84, 252, 247),
+  CHSV(84, 252, 250),
+  CHSV(84, 252, 252),
+  CHSV(84, 74, 247),
+  CHSV(84, 79, 247),
+  CHSV(84, 252, 252),
+  CHSV(84, 71, 247),
+  CHSV(84, 252, 252)
+};
