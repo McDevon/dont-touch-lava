@@ -8,6 +8,7 @@ struct GameState {
   long current_step;
   int current_substep;
   int animation_step;
+  int color_counter;
   int color_offset;
   int phase_step;
   int step_duration;
@@ -24,7 +25,7 @@ struct GameState {
   int led_count;
 };
 
-#define CREATE_GAME_STATE(leds, led_count) { leds, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, led_count }
+#define CREATE_GAME_STATE(leds, led_count) { leds, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, led_count }
 
 int step_game(GameState *state, long sensor_duration);
 

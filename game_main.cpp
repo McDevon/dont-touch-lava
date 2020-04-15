@@ -291,9 +291,13 @@ int step_game(GameState *state, long sensor_duration)
     initialize_game(state);
   }
 
-  state->color_offset += 1;
-  if (state->color_offset >= lava_colors_count) {
-    state->color_offset = 0;
+  state->color_counter += 1;
+  if (state->color_counter > 5) {
+    state->color_counter = 0;
+    state->color_offset += 1;
+    if (state->color_offset >= lava_colors_count) {
+      state->color_offset = 0;
+    }
   }
 
   long distance = (sensor_duration > min_distance && sensor_duration < max_distance) ? sensor_duration : state->last_duration;
