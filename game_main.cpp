@@ -174,7 +174,7 @@ void lose_game(GameState *state)
 
 void reset_collectible(GameState *state)
 {
-  state->collectible_timer = 15 + random(15);
+  state->collectible_timer = 25 + random(25);
   state->collectible_position = -1;
 }
 
