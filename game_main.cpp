@@ -2,6 +2,9 @@
 #include "us_sensor.h"
 #include "colors.h"
 
+#define INVERT_CONTROL_DIRECTION
+//#undef INVERT_CONTROL_DIRECTION
+
 #define min_us_distance 50
 #define max_us_distance 200
 #define max_us_move_per_step 3
@@ -94,7 +97,12 @@ void draw_state(GameState *state)
 
 void set_player_position(GameState *state, long distance)
 {
-  state->player_position = (distance - min_distance) * state->led_count / (max_distance - min_distance);
+  const long area_size = max_distance - min_distance;
+#ifdef INVERT_CONTROL_DIRECTION
+  state->player_position = (area_size - distance + min_distance) * state->led_count / (area_size);
+#else 
+  state->player_position = (distance - min_distance) * state->led_count / (area_size);
+#endif
 }
 
 void wait_for_player_to_be_ready(GameState *state, long distance)
