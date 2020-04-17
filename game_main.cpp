@@ -1,6 +1,7 @@
 #include "game_main.h"
 #include "us_sensor.h"
 #include "colors.h"
+#include <EEPROM.h>
 
 #define INVERT_CONTROL_DIRECTION
 //#undef INVERT_CONTROL_DIRECTION
@@ -27,13 +28,23 @@ const long move_outlier_threshold = us_cm_to_microseconds(us_outlier_threshold);
 #define LAVA_BURST_LAVA_START 15
 #define LAVA_BURST_LAVA_END 30
 
+#define ANIMATION_WAIT 1
+#define ANIMATION_PLAY 0
+#define ANIMATION_ENDING 2
+#define ANIMATION_SCORE 3
+
 void initialize_game(GameState *state)
 {
-  randomSeed(analogRead(0));
+  if (state->player_position < 0) {
+    randomSeed(analogRead(0));
+    state->high_score = EEPROM.get(0, state->high_score);
+    Serial.print(" Load high score: ");
+    Serial.println(state->high_score);
+  }
 
   state->current_step = 0;
   state->current_substep = 0;
-  state->animation = 1;
+  state->animation = ANIMATION_WAIT;
   state->animation_step = 0;
   state->phase_step = 50 + random(100);
   state->last_duration = us_cm_to_microseconds((min_us_distance + max_us_distance) / 2);
@@ -113,7 +124,7 @@ void wait_for_player_to_be_ready(GameState *state, long distance)
     state->current_step++;
     if (state->current_step > 150) {
       state->current_step = 0;
-      state->animation = 0;
+      state->animation = ANIMATION_PLAY;
     }
   } else {
     state->current_step = 0;
@@ -171,7 +182,7 @@ void move_area(GameState *state)
 
 void lose_game(GameState *state)
 {
-  state->animation = 2;
+  state->animation = ANIMATION_ENDING;
   state->current_substep = 0;
   state->animation_step = 0;
 
@@ -277,6 +288,91 @@ void ending_animation(GameState *state, long distance)
   }
 
   if (state->animation_step > 5) {
+    state->current_substep = 0;
+    state->animation_step = 0;
+    state->player_position = 0;
+    state->area_top = 0;
+    state->step_duration = 15;
+    state->animation = ANIMATION_SCORE;
+  }
+}
+
+void draw_score_climb(GameState *state) {
+  const int highest_point = state->led_count * 2 / 3;
+  const int bottom_point = max(state->player_position - highest_point, 0);
+
+  for (int i = 0; i < state->led_count; ++i) {
+    const int score = bottom_point + i + 1;
+    const CHSV score_color = (score / 10) % 2 == 0 ? CHSV(212, 255, 247) : CHSV(40, 255, 247);
+    if (score <= state->player_position) {
+      state->leds[i] = score_color;
+    } else if (score == state->high_score) {
+      state->leds[i] = CRGB::Green;
+    } else {
+      state->leds[i] = CRGB::Black;
+    }
+  }
+}
+
+void draw_high_score_blink(GameState *state) {
+  if ((state->current_substep / 10) % 2 == 0) {
+    for (int i = 0; i < state->led_count; ++i) {
+      state->leds[i] = CRGB::Black;
+    }
+  } else {
+    draw_score_climb(state);
+  }
+}
+
+void score_animation(GameState *state) {
+  if (state->player_position < state->score) {
+    state->current_substep += 1;
+    if (state->animation_step == 0) {
+      const int slow_limit = state->score / 10 * 10;
+      const int jump_after = state->player_position >= slow_limit ? 25 : 1;
+      if (state->current_substep > jump_after) {
+        state->current_substep = 0;
+        state->player_position += 1;
+
+        if ((state->player_position + 1) % 10 == 0) {
+          state->animation_step = 1;
+        }
+      }
+    } else if (state->animation_step == 1) {
+      if (state->current_substep > 30) {
+        state->current_substep = 0;
+        state->animation_step = 0;
+      }
+    }
+
+    if (state->player_position == state->score) {
+      state->current_substep = 0;
+      state->animation_step = state->score > state->high_score ? 1 : 0;
+    }
+
+    draw_score_climb(state);
+  } else {
+    state->current_substep += 1;
+    if (state->animation_step == 0) {
+      draw_score_climb(state);
+      if (state->current_substep > 200) {
+        state->animation_step = -1;
+      }
+    } else {
+      draw_high_score_blink(state);
+      if (state->current_substep > 300) {
+        state->animation_step = -1;
+      }
+    }
+  }
+  
+  if (state->animation_step < 0) {
+    if (state->score > state->high_score) {
+      state->high_score = state->score;
+      Serial.print(" New high score: ");
+      Serial.println(state->high_score);
+      EEPROM.put(0, state->high_score);
+    }
     initialize_game(state);
   }
 }
@@ -307,14 +403,16 @@ int step_game(GameState *state, long sensor_duration)
     distance = sign(change) * max_move_speed + state->last_duration;
   }
 
-  if (state->animation == 1) {
+  if (state->animation == ANIMATION_WAIT) {
     wait_for_player_to_be_ready(state, distance);    
     draw_state(state);
-  } else if (state->animation == 0) {
+  } else if (state->animation == ANIMATION_PLAY) {
     play_game(state, distance);
     draw_state(state);
-  } else if (state->animation == 2) {
+  } else if (state->animation == ANIMATION_ENDING) {
     ending_animation(state, distance);
+  } else if (state->animation == ANIMATION_SCORE) {
+    score_animation(state);
   }
 
   state->last_duration = distance;

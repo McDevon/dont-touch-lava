@@ -54,6 +54,11 @@ def main():
     color(118, 28, 97)
     color(118, 99, 99)
 
+    print('\n score\n')
+    color(300, 100, 97)
+    color(57, 100, 97)
+
+
 
 if __name__ == '__main__':
     main()
