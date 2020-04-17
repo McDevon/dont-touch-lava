@@ -6,8 +6,8 @@
 #define INVERT_CONTROL_DIRECTION
 //#undef INVERT_CONTROL_DIRECTION
 
-#define min_us_distance 50
-#define max_us_distance 200
+#define min_us_distance 20
+#define max_us_distance 150
 #define max_us_move_per_step 3
 #define us_outlier_threshold 30
 
