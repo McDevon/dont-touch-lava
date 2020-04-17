@@ -298,7 +298,7 @@ void ending_animation(GameState *state, long distance)
 }
 
 void draw_score_climb(GameState *state) {
-  const int highest_point = state->led_count * 2 / 3;
+  const int highest_point = state->led_count * 3 / 4;
   const int bottom_point = max(state->player_position - highest_point, 0);
 
   for (int i = 0; i < state->led_count; ++i) {
