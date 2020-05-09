@@ -270,11 +270,13 @@ void ending_animation(GameState *state, long distance)
 
 void draw_score_climb(GameState *state) {
   const int highest_point = state->led_count * 3 / 4;
-  const int bottom_point = max(state->player_position - highest_point, 0);
+  const int bottom_step = state->current_substep < 8 ? -1 : 0;
+  const int bottom_point = max(state->player_position - highest_point + bottom_step, 0);
 
   for (int i = 0; i < state->led_count; ++i) {
     const int score = bottom_point + i + 1;
-    const CHSV score_color = (score / 10) % 2 == 0 ? CHSV(212, 255, 247) : CHSV(40, 255, 247);
+    const CHSV score_color = ((score - 1) / 10) % 2 == 0 ? CHSV(212, 255, 247) : CHSV(40, 255, 247);
+
     if (score <= state->player_position) {
       state->leds[i] = score_color;
     } else if (score == state->high_score) {
@@ -305,7 +307,7 @@ void score_animation(GameState *state) {
         state->current_substep = 0;
         state->player_position += 1;
 
-        if ((state->player_position + 1) % 10 == 0) {
+        if ((state->player_position) % 10 == 0 && state->player_position < slow_limit) {
           state->animation_step = 1;
         }
       }
